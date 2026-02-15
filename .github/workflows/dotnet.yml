@@ -8,6 +8,40 @@ on:
   workflow_dispatch:
 
 jobs:
+  guard-admin-labels:
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'Зачтено'
+
+    steps:
+      - name: Check User Permission
+        id: check_permission
+        uses: sushichop/action-repository-permission@v1
+        with:
+          required-permission: admin
+
+      - name: Remove Label and Comment
+        # Если has-permission == false, значит метку повесил студент
+        if: steps.check_permission.outputs.has-permission == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelToRemove = 'Accepted';
+            const user = context.actor;
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: labelToRemove
+            });
+
+            // 2. Оставляем предупреждение
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `⚠️ @${user}, вы не можете самостоятельно помечать работу как принятую. Вас запомнили`
+            });
   build:
     runs-on: ubuntu-latest
 
@@ -29,10 +63,15 @@ jobs:
         shell: bash
         run: |
           # Если это PR, берем метки. Если это push в main, запускаем всё.
+
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
           else
             LABELS="NONE"
+          fi
+          if [[ $LABELS == *"Зачтено"* ]]; then 
+              echo "Work accepted, no need to re-run full test suite if not needed."
+              # Можно либо выйти, либо просто проигнорировать эту метку в FILTER
           fi
 
           FILTER=""
