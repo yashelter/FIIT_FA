@@ -195,32 +195,86 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
 
     protected void RotateLeft(TNode x)
     {
-        throw new NotImplementedException();
+        TNode y = x.Right;
+
+        x.Right = y.Left;
+        if (y.Left != null)
+        {
+            y.Left.Parent = x;
+        }
+
+        y.Parent = x.Parent;
+
+        if (x.Parent == null) 
+        {
+            Root = y;
+        }
+        else if (x.IsLeftChild)
+        {
+            x.Parent.Left = y;
+        }
+        else
+        {
+            x.Parent.Right = y;
+        }
+        y.Left = x;
+        x.Parent = y;
     }
 
     protected void RotateRight(TNode y)
     {
-        throw new NotImplementedException();
+        TNode x = y.Left;
+
+        y.Left = x.Right;
+        if (x.Right != null)
+        {
+            x.Right.Parent = y;
+        }
+
+        x.Parent = y.Parent;
+
+        if (y.Parent == null)
+        {
+            Root = x;
+        }
+        else if (y.IsRightChild)
+        {
+            y.Parent.Right = x;
+        }
+        else
+        {
+            y.Parent.Left = x;
+        }
+        x.Left = y;
+        y.Parent = x;
     }
     
     protected void RotateBigLeft(TNode x)
     {
-        throw new NotImplementedException();
+        TNode y = x.Right;
+
+        RotateRight(y);
+        RotateLeft(x);
     }
     
     protected void RotateBigRight(TNode y)
     {
-        throw new NotImplementedException();
+        TNode x = y.Left;
+
+        RotateLeft(x);
+        RotateRight(y);
     }
     
     protected void RotateDoubleLeft(TNode x)
     {
-        throw new NotImplementedException();
+        RotateLeft(x);
+        RotateLeft(x);
     }
     
     protected void RotateDoubleRight(TNode y)
     {
-        throw new NotImplementedException();
+        RotateRight(y);
+        RotateRight(y);
     }
     
     protected void Transplant(TNode u, TNode? v)
