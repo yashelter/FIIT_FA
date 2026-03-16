@@ -5,184 +5,110 @@ namespace TreeDataStructures.Implementations.Treap;
 public class Treap<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, TreapNode<TKey, TValue>>
     where TKey : IComparable<TKey>
 {
-    /// <summary>
-    /// Разрезает дерево с корнем <paramref name="root"/> на два поддерева:
-    /// Left: все ключи <= <paramref name="key"/>
-    /// Right: все ключи > <paramref name="key"/>
-    /// </summary>
-    protected virtual (TreapNode<TKey, TValue>? Left, TreapNode<TKey, TValue>? Right)
-        Split(TreapNode<TKey, TValue>? root, TKey key)
+    protected override TreapNode<TKey, TValue> CreateNode(TKey key, TValue value)
+        => new(key, value);
+
+    protected virtual (TreapNode<TKey, TValue>?, TreapNode<TKey, TValue>?)
+        Split(TreapNode<TKey, TValue>? node, TKey key, bool strict = false)
     {
-        return SplitInternal(root, key, includeEqualToLeft: true);
-    }
+        if (node is null) return (null, null);
 
-    // Универсальный split:
-    // includeEqualToLeft = true  -> Left: <= key, Right: > key
-    // includeEqualToLeft = false -> Left: <  key, Right: >= key
-    private (TreapNode<TKey, TValue>? Left, TreapNode<TKey, TValue>? Right)
-        SplitInternal(TreapNode<TKey, TValue>? root, TKey key, bool includeEqualToLeft)
-    {
-        if (root == null)
+        var cmp = Comparer.Compare(node.Key, key);
+
+        if (strict ? cmp < 0 : cmp <= 0)
         {
-            return (null, null);
-        }
-
-        int cmp = Comparer.Compare(root.Key, key);
-        bool goesToLeftPart = cmp < 0 || (includeEqualToLeft && cmp == 0);
-
-        if (goesToLeftPart)
+            var (left, right) = Split(node.Right, key, strict);
+            
+            node.Right = left;
+            left?.Parent = node;
+            node.Parent = null;
+            right?.Parent = null;
+            
+            return (node, right);
+        } 
+        else 
         {
-            var (leftPart, rightPart) = SplitInternal(root.Right, key, includeEqualToLeft);
-
-            root.Right = leftPart;
-            if (leftPart != null)
-            {
-                leftPart.Parent = root;
-            }
-
-            root.Parent = null;
-            if (rightPart != null)
-            {
-                rightPart.Parent = null;
-            }
-
-            return (root, rightPart);
-        }
-        else
-        {
-            var (leftPart, rightPart) = SplitInternal(root.Left, key, includeEqualToLeft);
-
-            root.Left = rightPart;
-            if (rightPart != null)
-            {
-                rightPart.Parent = root;
-            }
-
-            root.Parent = null;
-            if (leftPart != null)
-            {
-                leftPart.Parent = null;
-            }
-
-            return (leftPart, root);
+            var (left, right) = Split(node.Left, key, strict);
+            
+            node.Left = right;
+            right?.Parent = node;
+            node.Parent = null;
+            left?.Parent = null;
+            
+            return (left, node);
         }
     }
 
-    /// <summary>
-    /// Сливает два дерева в одно.
-    /// Важное условие: все ключи в <paramref name="left"/> должны быть меньше ключей в <paramref name="right"/>.
-    /// Слияние происходит на основе Priority (куча).
-    /// </summary>
-    protected virtual TreapNode<TKey, TValue>? Merge(TreapNode<TKey, TValue>? left, TreapNode<TKey, TValue>? right)
+    protected virtual TreapNode<TKey, TValue>? Merge(
+        TreapNode<TKey, TValue>? left, TreapNode<TKey, TValue>? right)
     {
-        if (left == null)
+        if (left is null)
         {
-            if (right != null) right.Parent = null;
+            right?.Parent = null;
+            
             return right;
         }
 
-        if (right == null)
+        if (right is null)
         {
             left.Parent = null;
+            
             return left;
         }
 
-        if (left.Priority > right.Priority)
+        if (left.Priority >= right.Priority)
         {
             left.Right = Merge(left.Right, right);
-            if (left.Right != null)
-            {
-                left.Right.Parent = left;
-            }
-
+            
+            if (left.Right is { } leftRight) leftRight.Parent = left;
+            
             left.Parent = null;
+            
             return left;
         }
         else
         {
             right.Left = Merge(left, right.Left);
-            if (right.Left != null)
-            {
-                right.Left.Parent = right;
-            }
+
+            if (right.Left is { } rightLeft) rightLeft.Parent = right;
 
             right.Parent = null;
+
             return right;
         }
     }
 
     public override void Add(TKey key, TValue value)
     {
-        var existing = FindNode(key);
-        if (existing != null)
+        if (FindNode(key) is { } existing)
         {
             existing.Value = value;
+            
             return;
         }
 
-        var newNode = CreateNode(key, value);
-
-        var (left, right) = Split(Root, key);
-        Root = Merge(Merge(left, newNode), right);
-        if (Root != null)
-        {
-            Root.Parent = null;
-        }
-
+        var node = CreateNode(key, value);
+        
+        var (left, right) = Split(Root, key, strict: true);
+        
+        Root = Merge(Merge(left, node), right);
         Count++;
-        OnNodeAdded(newNode);
+        
+        OnNodeAdded(node);
     }
 
     public override bool Remove(TKey key)
     {
-        var nodeToRemove = FindNode(key);
-        if (nodeToRemove == null)
-        {
-            return false;
-        }
+        if (!ContainsKey(key)) return false;
 
-        var parentBefore = nodeToRemove.Parent;
+        var (less, greaterEq) = Split(Root, key, strict: true);
+        var (_, greater) = Split(greaterEq, key, strict: false);
 
-        // Разбиваем на < key и >= key
-        var (less, greaterOrEqual) = SplitInternal(Root, key, includeEqualToLeft: false);
-        // Из >= key выделяем == key и > key
-        var (equal, greater) = Split(greaterOrEqual, key);
-
-        TreapNode<TKey, TValue>? replacement = null;
-        if (equal != null)
-        {
-            // На случай расширения под дубликаты: склеиваем детей удаляемого фрагмента.
-            replacement = Merge(equal.Left, equal.Right);
-            if (replacement != null)
-            {
-                replacement.Parent = null;
-            }
-        }
-
-        Root = Merge(Merge(less, replacement), greater);
-        if (Root != null)
-        {
-            Root.Parent = null;
-        }
-
+        Root = Merge(less, greater);
         Count--;
-        OnNodeRemoved(parentBefore, replacement);
-
+        
+        OnNodeRemoved(null, null);
+        
         return true;
-    }
-
-    protected override TreapNode<TKey, TValue> CreateNode(TKey key, TValue value)
-    {
-        return new TreapNode<TKey, TValue>(key, value);
-    }
-
-    protected override void OnNodeAdded(TreapNode<TKey, TValue> newNode)
-    {
-        // Для Treap вся балансировка выполняется напрямую в Add через Split/Merge.
-    }
-
-    protected override void OnNodeRemoved(TreapNode<TKey, TValue>? parent, TreapNode<TKey, TValue>? child)
-    {
-        // Для Treap вся балансировка выполняется напрямую в Remove через Split/Merge.
     }
 }
