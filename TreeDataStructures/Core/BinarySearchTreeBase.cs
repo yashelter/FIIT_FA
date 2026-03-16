@@ -372,48 +372,35 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
 
     #region Iterators
 
-    private enum TraversalStrategy
-    {
-        InOrder,
-        PreOrder,
-        PostOrder,
-        InOrderReverse,
-        PreOrderReverse,
-        PostOrderReverse
-    }
-
     /// <summary>
-    /// Внутренний класс-итератор. 
+    /// Внутренний класс-итератор.
     /// Реализует паттерн Iterator вручную, без yield return (ban).
     /// </summary>
-    private struct TreeIterator :
+    private abstract class TreeIterator :
         IEnumerable<TreeEntry<TKey, TValue>>,
         IEnumerator<TreeEntry<TKey, TValue>>
     {
         private readonly TNode? _root;
-        private readonly TraversalStrategy _strategy;
         private Stack<Frame> _stack = new();
 
         private TreeEntry<TKey, TValue> _current;
         private bool _hasCurrent;
 
-        private readonly struct Frame(TNode node, int depth, bool emit)
+        protected readonly struct Frame(TNode node, int depth, bool emit)
         {
             public TNode Node { get; } = node;
             public int Depth { get; } = depth;
             public bool Emit { get; } = emit;
         }
 
-        public TreeIterator(TNode? root, TraversalStrategy strategy)
+        protected TreeIterator(TNode? root)
         {
             _root = root;
-            _strategy = strategy;
             
             Reset();
         }
 
-        public IEnumerator<TreeEntry<TKey, TValue>> GetEnumerator() =>
-            new TreeIterator(_root, _strategy);
+        public IEnumerator<TreeEntry<TKey, TValue>> GetEnumerator() => Create(_root);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -432,7 +419,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                 {
                     _current = new TreeEntry<TKey, TValue>(frame.Node.Key, frame.Node.Value, frame.Depth);
                     _hasCurrent = true;
-                    
+
                     return true;
                 }
 
@@ -440,7 +427,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             }
 
             _hasCurrent = false;
-            
+
             return false;
         }
 
@@ -449,70 +436,18 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             _stack = new Stack<Frame>();
             _hasCurrent = false;
 
-            if (_root != null)
-            {
-                _stack.Push(new Frame(_root, 0, emit: false));
-            }
+            PushNode(_root, 0);
         }
 
         public void Dispose()
         {
         }
 
-        private void Expand(TNode node, int depth)
-        {
-            var nextDepth = depth + 1;
+        protected abstract TreeIterator Create(TNode? root);
 
-            switch (_strategy)
-            {
-                case TraversalStrategy.InOrder: // L N R
-                    PushNode(node.Right, nextDepth);
-                    PushEmit(node, depth);
-                    PushNode(node.Left, nextDepth);
-                    
-                    break;
+        protected abstract void Expand(TNode node, int depth);
 
-                case TraversalStrategy.PreOrder: // N L R
-                    PushNode(node.Right, nextDepth);
-                    PushNode(node.Left, nextDepth);
-                    PushEmit(node, depth);
-                    
-                    break;
-
-                case TraversalStrategy.PostOrder: // L R N
-                    PushEmit(node, depth);
-                    PushNode(node.Right, nextDepth);
-                    PushNode(node.Left, nextDepth);
-                    
-                    break;
-
-                case TraversalStrategy.InOrderReverse: // R N L
-                    PushNode(node.Left, nextDepth);
-                    PushEmit(node, depth);
-                    PushNode(node.Right, nextDepth);
-                    
-                    break;
-
-                case TraversalStrategy.PreOrderReverse: // R L N
-                    PushEmit(node, depth);
-                    PushNode(node.Left, nextDepth);
-                    PushNode(node.Right, nextDepth);
-
-                    break;
-                
-                case TraversalStrategy.PostOrderReverse: // N R L
-                    PushNode(node.Left, nextDepth);
-                    PushNode(node.Right, nextDepth);
-                    PushEmit(node, depth);
-
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private void PushNode(TNode? node, int depth)
+        protected void PushNode(TNode? node, int depth)
         {
             if (node != null)
             {
@@ -520,27 +455,111 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             }
         }
 
-        private void PushEmit(TNode node, int depth) =>
+        protected void PushEmit(TNode node, int depth) =>
             _stack.Push(new Frame(node, depth, emit: true));
     }
 
+    private sealed class InOrderIterator(TNode? root) : TreeIterator(root)
+    {
+        protected override TreeIterator Create(TNode? root) => new InOrderIterator(root);
+
+        protected override void Expand(TNode node, int depth)
+        {
+            var nextDepth = depth + 1;
+
+            PushNode(node.Right, nextDepth);
+            PushEmit(node, depth);
+            PushNode(node.Left, nextDepth);
+        }
+    }
+
+    private sealed class PreOrderIterator(TNode? root) : TreeIterator(root)
+    {
+        protected override TreeIterator Create(TNode? root) => new PreOrderIterator(root);
+
+        protected override void Expand(TNode node, int depth)
+        {
+            var nextDepth = depth + 1;
+
+            PushNode(node.Right, nextDepth);
+            PushNode(node.Left, nextDepth);
+            PushEmit(node, depth);
+        }
+    }
+
+    private sealed class PostOrderIterator(TNode? root) : TreeIterator(root)
+    {
+        protected override TreeIterator Create(TNode? root) => new PostOrderIterator(root);
+
+        protected override void Expand(TNode node, int depth)
+        {
+            var nextDepth = depth + 1;
+
+            PushEmit(node, depth);
+            PushNode(node.Right, nextDepth);
+            PushNode(node.Left, nextDepth);
+        }
+    }
+
+    private sealed class InOrderReverseIterator(TNode? root) : TreeIterator(root)
+    {
+        protected override TreeIterator Create(TNode? root) => new InOrderReverseIterator(root);
+
+        protected override void Expand(TNode node, int depth)
+        {
+            var nextDepth = depth + 1;
+
+            PushNode(node.Left, nextDepth);
+            PushEmit(node, depth);
+            PushNode(node.Right, nextDepth);
+        }
+    }
+
+    private sealed class PreOrderReverseIterator(TNode? root) : TreeIterator(root)
+    {
+        protected override TreeIterator Create(TNode? root) => new PreOrderReverseIterator(root);
+
+        protected override void Expand(TNode node, int depth)
+        {
+            var nextDepth = depth + 1;
+
+            PushEmit(node, depth);
+            PushNode(node.Left, nextDepth);
+            PushNode(node.Right, nextDepth);
+        }
+    }
+
+    private class PostOrderReverseIterator(TNode? root) : TreeIterator(root)
+    {
+        protected override TreeIterator Create(TNode? root) => new PostOrderReverseIterator(root);
+
+        protected override void Expand(TNode node, int depth)
+        {
+            var nextDepth = depth + 1;
+
+            PushNode(node.Left, nextDepth);
+            PushNode(node.Right, nextDepth);
+            PushEmit(node, depth);
+        }
+    }
+
     private IEnumerable<TreeEntry<TKey, TValue>> InOrderTraversal(TNode? node) =>
-        new TreeIterator(node, TraversalStrategy.InOrder);
+        new InOrderIterator(node);
 
     private IEnumerable<TreeEntry<TKey, TValue>> PreOrderTraversal(TNode? node) =>
-        new TreeIterator(node, TraversalStrategy.PreOrder);
+        new PreOrderIterator(node);
 
     private IEnumerable<TreeEntry<TKey, TValue>> PostOrderTraversal(TNode? node) =>
-        new TreeIterator(node, TraversalStrategy.PostOrder);
+        new PostOrderIterator(node);
 
     private IEnumerable<TreeEntry<TKey, TValue>> InOrderReverseTraversal(TNode? node) =>
-        new TreeIterator(node, TraversalStrategy.InOrderReverse);
+        new InOrderReverseIterator(node);
 
     private IEnumerable<TreeEntry<TKey, TValue>> PreOrderReverseTraversal(TNode? node) =>
-        new TreeIterator(node, TraversalStrategy.PreOrderReverse);
+        new PreOrderReverseIterator(node);
 
     private IEnumerable<TreeEntry<TKey, TValue>> PostOrderReverseTraversal(TNode? node) =>
-        new TreeIterator(node, TraversalStrategy.PostOrderReverse);
+        new PostOrderReverseIterator(node);
 
     #endregion
 }
