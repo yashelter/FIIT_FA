@@ -9,15 +9,15 @@ public class Treap<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, TreapNode<
         => new(key, value);
 
     protected virtual (TreapNode<TKey, TValue>?, TreapNode<TKey, TValue>?)
-        Split(TreapNode<TKey, TValue>? node, TKey key, bool strict = false)
+        Split(TreapNode<TKey, TValue>? node, TKey key)
     {
         if (node is null) return (null, null);
 
         var cmp = Comparer.Compare(node.Key, key);
 
-        if (strict ? cmp < 0 : cmp <= 0)
+        if (cmp <= 0)
         {
-            var (left, right) = Split(node.Right, key, strict);
+            var (left, right) = Split(node.Right, key);
             
             node.Right = left;
             left?.Parent = node;
@@ -28,7 +28,7 @@ public class Treap<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, TreapNode<
         } 
         else 
         {
-            var (left, right) = Split(node.Left, key, strict);
+            var (left, right) = Split(node.Left, key);
             
             node.Left = right;
             right?.Parent = node;
@@ -89,7 +89,7 @@ public class Treap<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, TreapNode<
 
         var node = CreateNode(key, value);
         
-        var (left, right) = Split(Root, key, strict: true);
+        var (left, right) = Split(Root, key);
         
         Root = Merge(Merge(left, node), right);
         Count++;
@@ -99,15 +99,54 @@ public class Treap<TKey, TValue> : BinarySearchTreeBase<TKey, TValue, TreapNode<
 
     public override bool Remove(TKey key)
     {
-        if (!ContainsKey(key)) return false;
+        TreapNode<TKey, TValue>? removed = null;
+        TreapNode<TKey, TValue>? rebalanceParent = null;
+        TreapNode<TKey, TValue>? replacement = null;
 
-        var (less, greaterEq) = Split(Root, key, strict: true);
-        var (_, greater) = Split(greaterEq, key, strict: false);
+        TreapNode<TKey, TValue>? Erase(TreapNode<TKey, TValue>? node)
+        {
+            if (node is null) return null;
 
-        Root = Merge(less, greater);
+            var cmp = Comparer.Compare(key, node.Key);
+
+            switch (cmp)
+            {
+                case < 0:
+                {
+                    node.Left = Erase(node.Left);
+                    if (node.Left is { } left) left.Parent = node;
+                    node.Parent = null;
+
+                    return node;
+                }
+                case > 0:
+                {
+                    node.Right = Erase(node.Right);
+                    if (node.Right is { } right) right.Parent = node;
+                    node.Parent = null;
+
+                    return node;
+                }
+            }
+
+            removed = node;
+            rebalanceParent = node.Parent;
+            replacement = Merge(node.Left, node.Right);
+
+            node.Left = null;
+            node.Right = null;
+            node.Parent = null;
+
+            return replacement;
+        }
+
+        Root = Erase(Root);
+
+        if (removed is null) return false;
+
         Count--;
         
-        OnNodeRemoved(null, null);
+        OnNodeRemoved(rebalanceParent, replacement);
         
         return true;
     }
