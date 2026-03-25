@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using TreeDataStructures.Implementations.AVL;
 using TreeDataStructures.Implementations.BST;
 using TreeDataStructures.Implementations.RedBlackTree;
@@ -142,10 +143,10 @@ public abstract class GenericTreeTests<TTree> where TTree : ITree<int, string>, 
         List<int> remaining = Tree.InOrder().Select(x => x.Key).ToList();
         Assert.That(remaining, Is.Ordered);
     }
-    
+
     #endregion
-    
-    
+
+
     [Test]
     public void Test_RandomData_Consistency()
     {
