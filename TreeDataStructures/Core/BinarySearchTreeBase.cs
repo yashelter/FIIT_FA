@@ -64,7 +64,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             {
                 parent = current;
 
-                int cmpRes1 = comparer.Compare(key, current.Key);
+                int cmpRes1 = Comparer.Compare(key, current.Key);
 
                 if (cmpRes1 < 0)
                 {
@@ -76,7 +76,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     current = current.Right;
                 }
             }       
-            int cmpRes2 = comparer.Compare(key, parent.Key);
+            int cmpRes2 = Comparer.Compare(key, parent.Key);
             if (cmpRes2 < 0)
             {
                 parent.Left = newNode;
@@ -142,6 +142,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             if (node.Parent == null)
             {
                 current.Parent = null;
+                Root = current;
             }
 
             else if (node.IsLeftChild) {
@@ -264,7 +265,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         {
             y.Parent.Left = x;
         }
-        x.Left = y;
+        x.Right = y;
         y.Parent = x;
     }
     
@@ -340,6 +341,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         private TNode? _current;
         private Stack<TNode> _stack = new Stack<TNode>();
         private Stack<TNode> _postOrderStack;
+        private Stack<TNode> _postOrderReverseStack;
         private readonly TraversalStrategy _strategy; // or make it template parameter?
         
         // Конструктор
@@ -347,14 +349,10 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         {
             _root = Root;
             _strategy = strategy;
-            if (strategy == TraversalStrategy.PostOrder)
-            {
-                _postOrderStack = new Stack<TNode>();
-            }
-            else if (strategy == TraversalStrategy.PostOrderReverse)
-            {
-                _postOrderStack = new Stack<TNode>();
-            }
+            _stack = new Stack<TNode>();
+            _current = null;
+            _postOrderStack = null;
+            _postOrderReverseStack = null;
         }
         
         private void PushLeftBranch(TNode? node)
@@ -375,18 +373,18 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             }
         }
 
-        private void FillPostOrderStack()
+        private void FillPostOrderStackReverse()
         {
             Stack<TNode> tempStack = new Stack<TNode>();
             tempStack.Push(_root);
 
-            _postOrderStack = new Stack<TNode>();
+            _postOrderReverseStack = new Stack<TNode>();
 
             while (tempStack.Count > 0)
             {
                 TNode current = tempStack.Pop();
 
-                _postOrderStack.Push(current);
+                _postOrderReverseStack.Push(current);
 
                 if (current.Right != null)
                 {
@@ -399,7 +397,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             }
         }
 
-        private void FillPostOrderStackReverse()
+        private void FillPostOrderStack()
         {
             Stack<TNode> tempStack = new Stack<TNode>();
             tempStack.Push(_root);
@@ -522,7 +520,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                 }
                 return true;
             }
-            else if (_strategy == TraversalStrategy.PreOrderReverse)
+            else if (_strategy == TraversalStrategy.PostOrderReverse)
             {
                 if (_stack.Count == 0 && _current == null)
                 {
@@ -554,24 +552,24 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                 }
                 if (_postOrderStack.Count == 0) 
                 { 
-                return false;
+                    return false;
                 }
 
                 _current = _postOrderStack.Pop();
                 return true;
             }
-            else if (_strategy == TraversalStrategy.PostOrderReverse)
+            else if (_strategy == TraversalStrategy.PreOrderReverse)
             {
-                if (_postOrderStack == null)
+                if (_postOrderReverseStack == null)
                 {
                     FillPostOrderStackReverse();
                 }
-                if (_postOrderStack.Count == 0)
+                if (_postOrderReverseStack.Count == 0)
                 {
                     return false;
                 }
 
-                _current = _postOrderStack.Pop();
+                _current = _postOrderReverseStack.Pop();
                 return true;
             }
             else
@@ -582,17 +580,19 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         
         public void Reset()
         {
-            _stack.Clear();
+            _stack?.Clear();
             _current = null;
-            _postOrderStack.Clear();
+            _postOrderStack?.Clear();
+            _postOrderReverseStack?.Clear();
         }
 
         
         public void Dispose()
         {
-            _stack.Clear();
+            _stack?.Clear();
             _current = null;
-            _postOrderStack.Clear();
+            _postOrderStack?.Clear();
+            _postOrderReverseStack?.Clear();
         }
     }
     
