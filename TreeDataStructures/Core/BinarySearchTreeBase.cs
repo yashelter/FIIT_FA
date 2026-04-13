@@ -15,14 +15,83 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     
     public bool IsReadOnly => false;
 
-    public ICollection<TKey> Keys => throw new NotImplementedException();
-    public ICollection<TValue> Values => throw new NotImplementedException();
+    public ICollection<TKey> Keys
+    {
+        get
+        {
+            var keys = new List<TKey>();
+            foreach (var node in InOrder())
+            {
+                keys.Add(node.Key);
+            }
+
+            return keys;
+        }
+    }
+
+    public ICollection<TValue> Values
+    {
+        get
+        {
+            var values = new List<TValue>();
+            foreach (var node in InOrder())
+            {
+                values.Add(node.Value);
+            }
+            
+            return values;
+        }
+    }
     
     
     public virtual void Add(TKey key, TValue value)
     {
-        throw new NotImplementedException(
-            "Implement standard BST add logic using <CreateNode(key, value)> and OnNodeAdded(newNode)");
+        TNode newNode = CreateNode(key, value);
+    
+        // дерево пустое
+        if (Root == null)
+        {
+            Root = newNode;
+            Count++;
+            return;
+        }
+    
+        // дерево не пустое
+        TNode current = Root;
+    
+        while (current != null)
+        {
+            int cmp = Comparer.Compare(key, current.Key);
+        
+            if (cmp == 0)
+            {
+                current.Value = value;
+                return;
+            }
+            else if (cmp < 0)
+            {
+                if (current.Left == null)
+                {
+                    current.Left = newNode;
+                    newNode.Parent = current;
+                    Count++;
+                    return;
+                }
+                current = current.Left;
+            }
+            else 
+            {
+                if (current.Right == null)
+                {
+                    current.Right = newNode;
+                    newNode.Parent = current;
+                    Count++;
+                    return;
+                }
+                current = current.Right;
+            }
+        }
+        OnNodeAdded(newNode);
     }
 
     
@@ -39,7 +108,39 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     
     protected virtual void RemoveNode(TNode node)
     {
-        throw new NotImplementedException("Implement standard BST delete logic using Transplant helper");
+        if (node.Left == null)
+        {
+            Transplant(node, node.Right);
+            this.OnNodeRemoved(node.Parent, node.Right);
+        }
+        else if (node.Right == null)
+        {
+            Transplant(node, node.Left);
+            this.OnNodeRemoved(node.Parent, node.Left);
+        }
+        else
+        {
+            // Ищем минимальный элемент в ПРАВОМ поддереве
+            TNode? successor = node.Right;
+            while (successor?.Left != null)
+            {
+                successor = successor.Left;
+            }
+            
+            if (successor?.Parent != node) 
+            {
+                Transplant(successor, successor.Right);
+                successor.Right = node.Right;
+                successor.Right!.Parent = successor;
+            }
+        
+            Transplant(node, successor);
+            successor.Left = node.Left;
+            successor.Left!.Parent = successor;
+        
+            this.OnNodeRemoved(node.Parent, successor);
+        }
+
     }
 
     public virtual bool ContainsKey(TKey key) => FindNode(key) != null;
