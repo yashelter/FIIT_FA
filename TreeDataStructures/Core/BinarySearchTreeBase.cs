@@ -389,7 +389,6 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             TNode? next;
             if (flipped)
             {
-                // Reverse in-order: Right -> Node -> Left
                 if (currentNode.Left is not null)
                 {
                     next = currentNode.Left;
@@ -420,7 +419,6 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             }
             else
             {
-                // Standard in-order: Left -> Node -> Right
                 if (currentNode.Right is not null)
                 {
                     next = currentNode.Right;
@@ -434,7 +432,6 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     return YieldCurrent();
                 }
                 
-                // Поднимаемся вверх, пока мы не левый ребёнок
                 while (currentNode.Parent is not null && currentNode.IsRightChild)
                 {
                     currentNode = currentNode.Parent;
@@ -460,7 +457,11 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             if (!started)
             {
                 started = true;
-                if (root is null) { finished = true; return false; }
+                if (root is null)
+                {
+                    finished = true;
+                    return false;
+                }
                 currentNode = root;
                 currentDepth = baseDepth;
                 return YieldCurrent();
@@ -485,15 +486,12 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                 return YieldCurrent();
             }
             
-            // Поднимаемся вверх, ища узел, у которого есть непосещенный ВТОРОЙ ребенок
             while (currentNode?.Parent is not null)
             {
                 TNode parent = currentNode.Parent;
-                // Пересчитываем детей родителя
                 TNode? pFirst = flipped ? parent.Right : parent.Left;
                 TNode? pSecond = flipped ? parent.Left : parent.Right;
                 
-                // Если мы пришли от первого ребенка и есть второй — идем во второй
                 if (currentNode == pFirst && pSecond is not null)
                 {
                     currentNode = pSecond;
@@ -501,7 +499,6 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     return YieldCurrent();
                 }
                 
-                // Иначе продолжаем подъем
                 currentNode = parent;
                 currentDepth--;
             }
@@ -516,9 +513,12 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
             if (!started)
             {
                 started = true;
-                if (root is null) { finished = true; return false; }
+                if (root is null) 
+                {
+                    finished = true;
+                    return false;
+                }
                 
-                // Идём к самому "глубокому левому" узлу
                 currentNode = root;
                 currentDepth = baseDepth;
                 while (true)
@@ -550,10 +550,8 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                 TNode? firstChild = flipped ? parent.Right : parent.Left;
                 TNode? secondChild = flipped ? parent.Left : parent.Right;
                 
-                // Если пришли от первого ребёнка — пробуем второго
                 if (currentNode == firstChild && secondChild is not null && secondChild != lastVisited)
                 {
-                    // Спускаемся во второго ребёнка и дальше вглубь
                     currentNode = secondChild;
                     currentDepth++;
                     while (true)
@@ -575,7 +573,6 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     return YieldCurrentWithMark();
                 }
                 
-                // Оба ребёнка обработаны — возвращаем родителя
                 currentNode = parent;
                 currentDepth--;
                 return YieldCurrentWithMark();
@@ -589,7 +586,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         {
             if (currentNode is null) return false;
             current = new TreeEntry<TKey, TValue>(currentNode.Key, currentNode.Value, currentDepth);
-            lastVisited = currentNode; // Помечаем как посещённый для post-order
+            lastVisited = currentNode;
             return true;
         }
 
