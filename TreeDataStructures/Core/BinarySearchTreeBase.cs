@@ -363,7 +363,6 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                 TraversalStrategy.PreOrderReverse => _root, 
                 TraversalStrategy.InOrder => GetLeftmost(_root),
                 TraversalStrategy.InOrderReverse => GetRightmost(_root),
-        
                 TraversalStrategy.PostOrder => GetLeftmostLeaf(_root),
                 TraversalStrategy.PostOrderReverse => GetRightmostLeaf(_root),
         
@@ -535,7 +534,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
     
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
-        throw new NotImplementedException();
+        return InOrder().Select(entry =>new KeyValuePair<TKey, TValue>(entry.Key, entry.Value)).GetEnumerator();
     }
     
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
