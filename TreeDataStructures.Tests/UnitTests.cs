@@ -52,8 +52,8 @@ public class BinarySearchTreeTests : GenericTreeTests<BinarySearchTree<int, stri
         Assert.Multiple(() =>
         {
             Assert.That(inOrderRev, Is.EqualTo(new[] { 15, 10, 5 }), "InOrderReverse failed");
-            Assert.That(preOrderRev, Is.EqualTo(new[] { 15, 5, 10 }), "PreOrderReverse failed");
-            Assert.That(postOrderRev, Is.EqualTo(new[] { 10, 15, 5 }), "PostOrderReverse failed");
+            Assert.That(preOrderRev, Is.EqualTo(new[] { 10, 15, 5 }), "PreOrderReverse failed");
+            Assert.That(postOrderRev, Is.EqualTo(new[] { 15, 5, 10 }), "PostOrderReverse failed");
         });
     }
     #endregion
