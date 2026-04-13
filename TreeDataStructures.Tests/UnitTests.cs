@@ -11,14 +11,6 @@ namespace TreeDataStructures.Tests;
 public class BinarySearchTreeTests : GenericTreeTests<BinarySearchTree<int, string>>
 {
     #region Обходы (Traversals)
-    /// <summary>
-    /// Тест проверяет классические порядки обхода.
-    /// Для BST:
-    /// Root=10, Left=5, Right=15
-    /// InOrder: 5, 10, 15
-    /// PreOrder: 10, 5, 15
-    /// PostOrder: 5, 15, 10
-    /// </summary>
     [Test]
     public void Test_Traversals_Order()
     {
@@ -32,8 +24,8 @@ public class BinarySearchTreeTests : GenericTreeTests<BinarySearchTree<int, stri
         
         Assert.Multiple(() =>
         {
-            Assert.That(inOrder, Is.EqualTo(new[] { 5, 10, 15 }), "InOrder failed");
-            Assert.That(preOrder, Is.EqualTo(new[] { 10, 5, 15 }), "PreOrder failed");
+            Assert.That(inOrder,   Is.EqualTo(new[] { 5, 10, 15 }), "InOrder failed");
+            Assert.That(preOrder,  Is.EqualTo(new[] { 10, 5, 15 }), "PreOrder failed");
             Assert.That(postOrder, Is.EqualTo(new[] { 5, 15, 10 }), "PostOrder failed");
         });
     }
@@ -51,8 +43,8 @@ public class BinarySearchTreeTests : GenericTreeTests<BinarySearchTree<int, stri
         
         Assert.Multiple(() =>
         {
-            Assert.That(inOrderRev, Is.EqualTo(new[] { 15, 10, 5 }), "InOrderReverse failed");
-            Assert.That(preOrderRev, Is.EqualTo(new[] { 10, 15, 5 }), "PreOrderReverse failed");
+            Assert.That(inOrderRev,   Is.EqualTo(new[] { 15, 10, 5 }), "InOrderReverse failed");
+            Assert.That(preOrderRev,  Is.EqualTo(new[] { 10, 15, 5 }), "PreOrderReverse failed");
             Assert.That(postOrderRev, Is.EqualTo(new[] { 15, 5, 10 }), "PostOrderReverse failed");
         });
     }
