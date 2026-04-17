@@ -53,6 +53,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         {
             Root = newNode;
             Count++;
+            OnNodeAdded(newNode);
             return;
         }
     
@@ -75,6 +76,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     current.Left = newNode;
                     newNode.Parent = current;
                     Count++;
+                    OnNodeAdded(newNode);
                     return;
                 }
                 current = current.Left;
@@ -86,6 +88,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     current.Right = newNode;
                     newNode.Parent = current;
                     Count++;
+                    OnNodeAdded(newNode);
                     return;
                 }
                 current = current.Right;
@@ -200,55 +203,77 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
 
     protected void RotateLeft(TNode x)
     {
-        if (x.Parent == null) return;
-        
-        TNode par = x.Parent;
-        //обновляем у дедушки ребенка
-        if (par.IsLeftChild) par.Parent?.Left = x;
-        if (par.IsRightChild) par.Parent?.Right = x;
-        //обновляем родителя у х
-        x.Parent = par.Parent;
-        TNode? temp = x.Left;
-        
-        x.Left = par;
-        par.Parent = x;
+        if (x == null) return;
+        TNode? rightChild = x.Right;
 
-        par.Right = temp;
-        temp?.Parent = par;
+        if (rightChild == null) return;
+        TNode? parOG = x.Parent;
+        x.Right = rightChild.Left;
+        if(rightChild.Left != null)
+        {
+            rightChild.Left.Parent = x;
+        }
 
-        if (par == this.Root) this.Root = x;
+        rightChild.Parent = parOG;
+
+        if(parOG == null)
+        {
+            Root = rightChild;
+        }
+        else if (x.IsLeftChild)
+        {
+            parOG.Left = rightChild;
+        }
+        else
+        {
+            parOG.Right = rightChild;
+        }
+        rightChild.Left = x;
+        x.Parent = rightChild;
     }
 
     protected void RotateRight(TNode y)
     {
-       if(y.Parent == null) return;
+        if (y == null) return;
+        TNode? leftChild = y.Left;
 
-       TNode par = y.Parent;
-       if (par.IsLeftChild) par.Parent?.Left = y;
-       if (par.IsRightChild) par.Parent?.Right = y;
-       y.Parent = par.Parent;
-       
-       TNode? temp = y.Right;
+        if (leftChild == null) return;
+        TNode? parOG = y.Parent;
+        y.Left = leftChild.Right;
+        if (leftChild.Right != null)
+        {
+            leftChild.Right.Parent = y;
+        }
+        
 
-       y.Right = par;
-       par.Parent = y;
-
-       par.Left = temp;
-       temp?.Parent = par;
-       
-       if (par == this.Root) this.Root = y;
+        leftChild.Parent = parOG;
+        
+        if (parOG == null)
+        {
+            Root = leftChild;
+        }
+        else if (y.IsLeftChild)
+        {
+            parOG.Left = leftChild;
+        }
+        else
+        {
+            parOG.Right = leftChild;
+        }
+        leftChild.Right = y;
+        y.Parent = leftChild;
     }
     
     protected void RotateBigLeft(TNode x)
     {
-        this.RotateRight(x);
-        this.RotateLeft(x);
+        RotateRight(x.Left);
+        RotateLeft(x);
     }
     
     protected void RotateBigRight(TNode y)
     {
-        this.RotateLeft(y);
-        this.RotateRight(y);
+        RotateLeft(y.Right);
+        RotateRight(y);
     }
     
     protected void RotateDoubleLeft(TNode x)
