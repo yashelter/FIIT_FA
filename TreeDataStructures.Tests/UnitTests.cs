@@ -58,7 +58,7 @@ public class AvlTests : GenericTreeTests<AvlTree<int, string>> { }
 public class RedBlackTests : GenericTreeTests<RedBlackTree<int, string>> { }
 
 [TestFixture, Category("Splay")]
-public class SplayTests : GcmdenericTreeTests<SplayTree<int, string>> { }
+public class SplayTests : GenericTreeTests<SplayTree<int, string>> { }
 
 [TestFixture, Category("Treap")]
 public class TreapTests : GenericTreeTests<Treap<int, string>> { }
