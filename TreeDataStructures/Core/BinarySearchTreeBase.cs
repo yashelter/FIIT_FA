@@ -53,6 +53,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         {
             Root = newNode;
             Count++;
+            OnNodeAdded(newNode);
             return;
         }
     
@@ -75,6 +76,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     current.Left = newNode;
                     newNode.Parent = current;
                     Count++;
+                    OnNodeAdded(newNode);
                     return;
                 }
                 current = current.Left;
@@ -86,6 +88,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
                     current.Right = newNode;
                     newNode.Parent = current;
                     Count++;
+                    OnNodeAdded(newNode);
                     return;
                 }
                 current = current.Right;
@@ -198,8 +201,8 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         return null;
     }
 
-    protected void RotateLeft(TNode x)
-    {
+    protected virtual void RotateLeft(TNode x)
+    { 
         if (x.Parent == null) return;
         
         TNode par = x.Parent;
@@ -219,7 +222,7 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         if (par == this.Root) this.Root = x;
     }
 
-    protected void RotateRight(TNode y)
+    protected virtual void RotateRight(TNode y)
     {
        if(y.Parent == null) return;
 
@@ -555,4 +558,4 @@ public abstract class BinarySearchTreeBase<TKey, TValue, TNode>(IComparer<TKey>?
         }
     }
     public bool Remove(KeyValuePair<TKey, TValue> item) => Remove(item.Key);
-}
+}   
